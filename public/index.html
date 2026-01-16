@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Oblivion</title>
+<link rel="icon" href="/favicon.ico" />
+<style>
+  :root {
+    --purple: #7c7cff;
+    --bg: #0b0b12;
+    --glow: rgba(124,124,255,0.6);
+  }
+
+  body {
+    margin: 0;
+    font-family: "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: white;
+    overflow: hidden;
+  }
+
+  /* Topbar */
+  #topbar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    padding: 12px 20px;
+    display: flex;
+    gap: 12px;
+    background: rgba(11,11,18,0.7);
+    z-index: 10;
+    align-items: center;
+    backdrop-filter: blur(10px);
+  }
+
+  #url-input {
+    padding: 10px 16px;
+    border-radius: 20px;
+    border: none;
+    flex: 1;
+    font-size: 1rem;
+    outline: none;
+    background: #1b1233;
+    color: white;
+    transition: box-shadow 0.2s;
+  }
+
+  #url-input:focus {
+    box-shadow: 0 0 15px var(--glow);
+  }
+
+  button {
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: none;
+    background: var(--purple);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: box-shadow 0.2s, transform 0.1s;
+  }
+
+  button:hover {
+    box-shadow: 0 0 15px var(--glow);
+    transform: scale(1.05);
+  }
+
+  /* Iframe */
+  #proxy-frame {
+    position: absolute;
+    top: 60px;
+    left: 0;
+    width: 100%;
+    height: calc(100% - 60px);
+    border: none;
+    display: none;
+    z-index: 5;
+  }
+
+  /* Homepage + particles */
+  #homepage {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    width: 100vw;
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+  }
+
+  #particles {
+    position: absolute;
+    top:0;
+    left:0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+  }
+
+  /* Settings Panel */
+  #settings-panel {
+    position: fixed;
+    top: 70px;
+    right: 20px;
+    width: 240px;
+    background: rgba(15,10,30,0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 16px;
+    display: none;
+    z-index: 15;
+    border: 1px solid rgba(124,124,255,0.25);
+  }
+
+  #settings-panel h2 {
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+  }
+
+  #settings-panel label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+    font-size: 0.9rem;
+  }
+
+  #settings-panel select, #settings-panel input[type="checkbox"] {
+    background: #1b1233;
+    color: white;
+    border-radius: 10px;
+    border: none;
+    padding: 8px;
+  }
+
+  .toggle {
+    flex-direction: row !important;
+    align-items: center;
+    gap: 10px;
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div id="topbar">
+  <input type="text" id="url-input" placeholder="Enter URL or search..." />
+  <button id="go-btn">Go</button>
+  <button id="settings-btn">⚙</button>
+</div>
+
+<!-- Settings Panel -->
+<div id="settings-panel">
+  <h2>Settings</h2>
+  <label>
+    Search Engine
+    <select id="search-engine">
+      <option value="startpage">Startpage</option>
+      <option value="duckduckgo">DuckDuckGo</option>
+      <option value="brave">Brave</option>
+      <option value="google">Google</option>
+    </select>
+  </label>
+  <label class="toggle">
+    <input type="checkbox" id="particles-toggle" checked />
+    <span>Enable particles</span>
+  </label>
+  <label>
+    Cloak As
+    <select id="cloak-select">
+      <option value="none">None</option>
+      <option value="google">Google Docs</option>
+      <option value="classroom">Google Classroom</option>
+      <option value="drive">Google Drive</option>
+      <option value="canvas">Canvas</option>
+    </select>
+  </label>
+</div>
+
+<!-- Homepage -->
+<div id="homepage">
+  <canvas id="particles"></canvas>
+  <div id="homepage-content">
+    <h1 style="font-size: 3rem; color: #B888FF; text-shadow: 0 0 20px #B888FF;">Oblivion</h1>
+    <p style="color: #ccc; margin-top: 10px;">Type a URL or search above to start browsing</p>
+  </div>
+</div>
+
+<style>
+#homepage {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+}
+
+#homepage-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+}
+</style>
+
+<!-- Proxy iframe -->
+<iframe id="proxy-frame"></iframe>
+
+<script src="app.js"></script>
+<script>
+// Simple purple floating particles
+const canvas = document.getElementById("particles");
+const ctx = canvas.getContext("2d");
+let particlesArray = [];
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
+
+class Particle {
+  constructor() {
+    this.x = Math.random() * canvas.width;
+    this.y = Math.random() * canvas.height;
+    this.size = Math.random() * 4 + 1;
+    this.speedX = (Math.random() - 0.5) * 1.5;
+    this.speedY = (Math.random() - 0.5) * 1.5;
+    this.color = "rgba(124,124,255,0.7)";
+  }
+  update() {
+    this.x += this.speedX;
+    this.y += this.speedY;
+    if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+    if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+  }
+  draw() {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fillStyle = this.color;
+    ctx.fill();
+  }
+}
+
+function initParticles(count = 100) {
+  particlesArray = [];
+  for (let i = 0; i < count; i++) {
+    particlesArray.push(new Particle());
+  }
+}
+initParticles();
+
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particlesArray.forEach(p => {
+    p.update();
+    p.draw();
+  });
+  requestAnimationFrame(animate);
+}
+animate();
+</script>
+</body>
+</html>
